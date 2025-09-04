@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ITSM Scope Generator</title>
+  <style>
+    body { font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background:linear-gradient(to right,#f0f2f5,#dfe9f3); margin:0; padding:0; }
+    .container { max-width:700px; margin:5vh auto; background:#fff; border-radius:12px; padding:2rem; box-shadow:0 8px 24px rgba(0,0,0,.1); }
+    h1 { text-align:center; color:#333; margin-bottom:2rem; }
+    label { display:block; margin-top:1.2rem; margin-bottom:.3rem; font-weight:600; color:#444; }
+    input, select { width:100%; padding:.6rem; border-radius:6px; border:1px solid #ccc; font-size:1rem; transition:border .3s; }
+    input:focus, select:focus { border-color:#0078d7; outline:none; }
+    .addon-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:1rem; margin-top:1rem; }
+    .addon-item { background:#f9f9f9; padding:.8rem 1rem; border-radius:6px; border:1px solid #ccc; cursor:pointer; text-align:center; transition:background .3s, border .3s; }
+    .addon-item.selected { background:#0078d7; color:#fff; border-color:#0078d7; }
+    .hidden { display:none; }
+    .submit-btn { margin-top:2rem; width:100%; padding:.75rem; font-size:1.1rem; border:none; border-radius:6px; background:#0078d7; color:#fff; cursor:pointer; transition:background-color .3s; }
+    .submit-btn:hover { background:#005fa3; }
+    .credits { margin-top:2rem; text-align:center; font-size:.9rem; color:#666; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>ITSM Scope Generator</h1>
+    <form>
+      <label for="implementor">Implementor Name</label>
+      <input type="text" id="implementor" name="implementor" required />
+
+      <label for="product">Product</label>
+      <select id="product" name="product" required onchange="toggleEdition();">
+        <option value="">-- Select a product --</option>
+        <option value="ServiceDesk Plus">ServiceDesk Plus</option>
+        <option value="ServiceDesk Plus Cloud">ServiceDesk Plus Cloud</option>
+        <option value="ServiceDesk Plus MSP">ServiceDesk Plus MSP</option>
+        <option value="ServiceDesk Plus MSP Cloud">ServiceDesk Plus MSP Cloud</option>
+        <option value="Asset Explorer">Asset Explorer</option>
+        <option value="Asset Explorer Cloud">Asset Explorer Cloud</option>
+      </select>
+
+      <label for="customerDomain">Customer Domain</label>
+      <input type="text" id="customerDomain" name="customerDomain" required />
+
+      <label for="technicians">Technicians</label>
+      <input type="number" id="technicians" name="technicians" required />
+
+      <label for="assets">Asset Count</label>
+      <input type="number" id="assets" name="assets" required />
+
+      <div id="editionContainer">
+        <label for="edition">Edition</label>
+        <select id="edition" name="edition" onchange="toggleAddOns();">
+          <option value="">-- Select an edition --</option>
+          <option value="Standard">Standard</option>
+          <option value="Professional">Professional</option>
+          <option value="Enterprise">Enterprise</option>
+        </select>
+      </div>
+
+      <div id="addonsContainer" class="hidden">
+        <label>Add-ons</label>
+        <div id="addonsSelects" class="addon-grid"></div>
+      </div>
+
+      <label for="format">Download Format</label>
+      <select id="format" name="format" required>
+        <option value="pdf">PDF</option>
+        <option value="doc">DOC</option>
+      </select>
+
+      <button type="submit" class="submit-btn">Generate SOW</button>
+      <div class="credits">Designed by MECS Team - ManageEngine</div>
+    </form>
+  </div>
+
+  <script>
+    // show/hide Edition (Asset Explorer variants have no editions)
+    function toggleEdition() {
+      const product = document.getElementById("product").value;
+      const editionContainer = document.getElementById("editionContainer");
+      const addonsContainer = document.getElementById("addonsContainer");
+      const noEdition = ["Asset Explorer", "Asset Explorer Cloud"];
+      editionContainer.style.display = noEdition.includes(product) ? "none" : "block";
+      addonsContainer.classList.add("hidden");
+    }
+
+    // render add-ons tiles per product+edition
+    function toggleAddOns() {
+      const product = document.getElementById("product").value;
+      const edition = document.getElementById("edition").value;
+      const addonsContainer = document.getElementById("addonsContainer");
+      const addonsSelects = document.getElementById("addonsSelects");
+      addonsSelects.innerHTML = "";
+
+      const addonsMap = {
+        "ServiceDesk Plus Cloud": {
+          Standard: ["Service catalog", "Project management", "Problem management", "Change and release management", "Live chat"],
+          Professional: ["Service catalog", "Project management", "Problem management", "Change and release management", "Live chat", "CMDB", "Remote control"],
+          Enterprise: ["Remote control", "Live chat"]
+        },
+        "ServiceDesk Plus MSP Cloud": {
+          Standard: ["Service catalog", "Project management", "Problem management", "Change and release management", "Live chat"],
+          Professional: ["Service catalog", "Project management", "Problem management", "Change and release management", "Live chat", "CMDB", "Remote control"],
+          Enterprise: ["Remote control", "Live chat"]
+        },
+        "ServiceDesk Plus": {
+          Standard: ["Service catalog", "Problem management", "Project management", "Change and release management", "Computer telephony integration (CTI)", "Fail over service"],
+          Professional: ["Service catalog", "Problem management", "Project management", "Change and release management", "CMDB", "Computer telephony integration (CTI)", "Fail over service"],
+          Enterprise: ["Fail over service"]
+        },
+        "ServiceDesk Plus MSP": {
+          Standard: ["Service catalog", "Problem management", "Project management", "Change and release management", "Computer telephony integration (CTI)", "Fail over service"],
+          Professional: ["Service catalog", "Problem management", "Project management", "Change and release management", "CMDB", "Computer telephony integration (CTI)", "Fail over service"],
+          Enterprise: ["Fail over service"]
+        }
+      };
+
+      if (product in addonsMap && edition in addonsMap[product]) {
+        addonsMap[product][edition].forEach(opt => {
+          const item = document.createElement("div");
+          item.className = "addon-item";
+          item.textContent = opt;
+          item.onclick = () => item.classList.toggle("selected");
+          addonsSelects.appendChild(item);
+        });
+        addonsContainer.classList.remove("hidden");
+      } else {
+        addonsContainer.classList.add("hidden");
+      }
+    }
+
+    toggleEdition();
+  </script>
+
+  <!-- jsPDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <script>
+    // ---------------- data loading & mapping ----------------
+    const CONTENT_URL = "content.json"; // change to "content_converted.json" if using the converted file
+    const PRODUCTS_WITH_EDITIONS = new Set([
+      "ServiceDesk Plus",
+      "ServiceDesk Plus Cloud",
+      "ServiceDesk Plus MSP",
+      "ServiceDesk Plus MSP Cloud",
+    ]);
+
+    let CONTENT = {};
+    let MAPPING = {};
+
+    async function loadJSONs() {
+      const [cRes, mRes] = await Promise.all([fetch(CONTENT_URL), fetch("mapping.json")]);
+      if (!cRes.ok) throw new Error("Unable to load " + CONTENT_URL);
+      if (!mRes.ok) throw new Error("Unable to load mapping.json");
+      CONTENT = await cRes.json();
+      MAPPING = await mRes.json();
+    }
+
+    function getSelectedAddons() {
+      return [...document.querySelectorAll("#addonsSelects .addon-item.selected")].map(el => el.textContent.trim());
+    }
+
+    function buildSectionOrder(product, edition, selectedAddons) {
+      const productsMap = MAPPING.products || {};
+      const addonsMap   = MAPPING.addons   || {};
+      const prodDef = productsMap[product];
+      if (!prodDef) return [];
+
+      let order = [];
+      if (PRODUCTS_WITH_EDITIONS.has(product)) {
+        const edDef = prodDef[edition];
+        if (!edDef) return [];
+        if (Array.isArray(edDef.first)) order.push(...edDef.first);
+        selectedAddons.forEach(name => { if (Array.isArray(addonsMap[name])) order.push(...addonsMap[name]); });
+        if (Array.isArray(edDef.last)) order.push(...edDef.last);
+      } else {
+        if (Array.isArray(prodDef.base)) order.push(...prodDef.base);
+        selectedAddons.forEach(name => { if (Array.isArray(addonsMap[name])) order.push(...addonsMap[name]); });
+      }
+      const seen = new Set();
+      return order.filter(id => (seen.has(id) ? false : (seen.add(id), true)));
+    }
+
+    // ---------------- PDF helpers (styling & layout) ----------------
+    function normalizeSpaces(s) { return s.replace(/\u00A0/g, " ").replace(/[ \t]{2,}/g, " "); }
+
+    function drawSeparator(doc, y, left = 20, right = 190) {
+      doc.setDrawColor(200);
+      doc.line(left, y, right, y);
+      return y + 16; // more gap after the separator
+    }
+
+    function renderStyledParagraph(doc, text, x, y, maxWidth, lineH) {
+      // inline **bold** and *italic*
+      const tokens = [];
+      let i = 0, m;
+      const re = /(\*\*[^*]+\*\*|\*[^*]+\*)/g;
+      while ((m = re.exec(text)) !== null) {
+        if (m.index > i) tokens.push({ t: text.slice(i, m.index), s: "normal" });
+        const seg = m[0];
+        if (seg.startsWith("**")) tokens.push({ t: seg.slice(2, -2), s: "bold" });
+        else tokens.push({ t: seg.slice(1, -1), s: "italic" });
+        i = m.index + seg.length;
+      }
+      if (i < text.length) tokens.push({ t: text.slice(i), s: "normal" });
+
+      let cx = x, cy = y;
+      tokens.forEach(({ t, s }) => {
+        if (!t) return;
+        if (s === "bold") doc.setFont("helvetica", "bold");
+        else if (s === "italic") doc.setFont("helvetica", "italic");
+        else doc.setFont("helvetica", "normal");
+        doc.setFontSize(11); doc.setTextColor(0);
+
+        const words = normalizeSpaces(t).split(/(\s+)/);
+        words.forEach(w => {
+          if (!w) return;
+          const wWidth = doc.getTextWidth(w);
+          if (w === " ") { if (cx + wWidth <= x + maxWidth) cx += wWidth; else { cx = x; cy += lineH; } return; }
+          if (cx + wWidth > x + maxWidth) { cx = x; cy += lineH; }
+          if (cy > 280) { doc.addPage(); cy = 20; }
+          doc.text(w, cx, cy);
+          cx += wWidth;
+        });
+      });
+      return cy + lineH;
+    }
+
+    function renderBlock(doc, text, startY, marginLeft, maxWidth) {
+      let y = startY;
+      const lines = text.split("\n");
+
+      lines.forEach(raw => {
+        let line = raw.trim();
+        if (!line) { y += 4; return; }
+
+        if (line.startsWith("# ")) {
+          line = line.replace(/^# /, "");
+          doc.setFont("helvetica", "bold"); doc.setFontSize(16); doc.setTextColor(0, 51, 102);
+          const wrapped = doc.splitTextToSize(normalizeSpaces(line), maxWidth);
+          wrapped.forEach(t => { if (y > 280) { doc.addPage(); y = 20; } doc.text(t, marginLeft, y); y += 9; });
+          y += 4;
+
+        } else if (line.startsWith("## ")) {
+          line = line.replace(/^## /, "");
+          doc.setFont("helvetica", "bold"); doc.setFontSize(13); doc.setTextColor(0, 0, 0);
+          const wrapped = doc.splitTextToSize(normalizeSpaces(line), maxWidth);
+          wrapped.forEach(t => { if (y > 280) { doc.addPage(); y = 20; } doc.text(t, marginLeft, y); y += 8; });
+          y += 2;
+
+        } else if (line.startsWith("> ")) {
+          line = line.replace(/^> /, "");
+          doc.setFont("helvetica", "italic"); doc.setFontSize(11); doc.setTextColor(100);
+          const wrapped = doc.splitTextToSize(normalizeSpaces(line), maxWidth);
+          wrapped.forEach(t => { if (y > 280) { doc.addPage(); y = 20; } doc.text(t, marginLeft, y); y += 7; });
+          y += 2;
+
+        } else if (line.startsWith("- ")) {
+          const body = "• " + line.replace(/^- /, "");
+          y = renderStyledParagraph(doc, body, marginLeft, y, maxWidth, 6);
+
+        } else {
+          y = renderStyledParagraph(doc, normalizeSpaces(line), marginLeft, y, maxWidth, 6);
+        }
+      });
+
+      y = drawSeparator(doc, y); // line + extra space
+      return y;
+    }
+
+    // ---------------- generators ----------------
+    function generatePDF(sectionIds) {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      const marginLeft = 20, maxWidth = 170;
+      let y = 20;
+
+      doc.setFont("helvetica", "bold"); doc.setFontSize(18); doc.setTextColor(0, 51, 102);
+      doc.text("Scope of Work Document", marginLeft, y);
+      y += 16;
+
+      const implementor = document.getElementById("implementor").value;
+      const customerDomain = document.getElementById("customerDomain").value;
+      const technicians = document.getElementById("technicians").value;
+      const assets = document.getElementById("assets").value;
+      const product = document.getElementById("product").value;
+      const edition = document.getElementById("edition")?.value || "";
+      const addons = [...document.querySelectorAll("#addonsSelects .addon-item.selected")].map(el => el.textContent).join(", ") || "None";
+
+      const overviewBlock = [
+        "# Project Overview",
+        "The implementation and training duration is proposed for 10 Days",
+        "Working Hours: 8 hours per day",
+        `Technical Consultant Name: ${implementor}`,
+        `Customer Domain: ${customerDomain}`,
+        `Technicians: ${technicians}`,
+        `Assets: ${assets}`,
+        `Product: ${product}`,
+        edition ? `Edition: ${edition}` : "",
+        `Add-ons: ${addons}`,
+        "",
+        "> We need a dedicated resource from the Customer side who knows the requirement details during the implementation phase."
+      ].filter(Boolean).join("\n");
+
+      y = renderBlock(doc, overviewBlock, y, marginLeft, maxWidth);
+      sectionIds.forEach(id => { const block = CONTENT[id]; if (block) y = renderBlock(doc, block, y, marginLeft, maxWidth); });
+      doc.save("ITSM_Scope.pdf");
+    }
+
+    // Styled DOC export (Word opens HTML .doc nicely)
+    function generateDOC(sectionIds) {
+      const implementor = document.getElementById("implementor").value;
+      const customerDomain = document.getElementById("customerDomain").value;
+      const technicians = document.getElementById("technicians").value;
+      const assets = document.getElementById("assets").value;
+      const product = document.getElementById("product").value;
+      const edition = document.getElementById("edition")?.value || "";
+      const addons = [...document.querySelectorAll("#addonsSelects .addon-item.selected")].map(el => el.textContent).join(", ") || "None";
+
+      const css = `
+        body { font-family: Segoe UI, Tahoma, Arial, sans-serif; color:#111; }
+        .title { font-size:24px; color:#003366; font-weight:700; margin:0 0 16px; }
+        h2 { font-size:18px; color:#003366; margin:18px 0 8px; }
+        h3 { font-size:15px; color:#000; font-weight:700; margin:14px 0 6px; }
+        p  { font-size:12px; line-height:1.5; margin:6px 0; }
+        ul { margin:6px 0 6px 18px; }
+        li { font-size:12px; line-height:1.5; margin:4px 0; }
+        blockquote { font-style:italic; color:#666; border-left:3px solid #ddd; padding-left:10px; margin:8px 0; }
+        hr.sep { border:none; border-top:1px solid #ddd; margin:16px 0; }
+      `;
+
+      const toHTML = (text) => {
+        const lines = text.split("\n");
+        let html = "", inList = false;
+        const flush = () => { if (inList) { html += "</ul>"; inList = false; } };
+
+        lines.forEach(raw => {
+          let line = (raw || "").trim();
+          if (!line) { html += "<p></p>"; return; }
+
+          line = line.replace(/\u00A0/g," ").replace(/[ \t]{2,}/g," ");
+          line = line.replace(/\*\*([^*]+)\*\*/g,"<strong>$1</strong>").replace(/\*([^*]+)\*/g,"<em>$1</em>");
+
+          if (line.startsWith("# ")) { flush(); html += `<h2>${line.slice(2)}</h2>`; }
+          else if (line.startsWith("## ")) { flush(); html += `<h3>${line.slice(3)}</h3>`; }
+          else if (line.startsWith("> ")) { flush(); html += `<blockquote>${line.slice(2)}</blockquote>`; }
+          else if (line.startsWith("- ")) { if (!inList) { html += "<ul>"; inList = true; } html += `<li>${line.slice(2)}</li>`; }
+          else { flush(); html += `<p>${line}</p>`; }
+        });
+        flush(); html += `<hr class="sep" />`; return html;
+      };
+
+      const overview = [
+        "# Project Overview",
+        "The implementation and training duration is proposed for 10 Days",
+        "Working Hours: 8 hours per day",
+        `Technical Consultant Name: ${implementor}`,
+        `Customer Domain: ${customerDomain}`,
+        `Technicians: ${technicians}`,
+        `Assets: ${assets}`,
+        `Product: ${product}`,
+        edition ? `Edition: ${edition}` : "",
+        `Add-ons: ${addons}`,
+        "",
+        "> We need a dedicated resource from the Customer side who knows the requirement details during the implementation phase."
+      ].filter(Boolean).join("\n");
+
+      let bodyHTML = `<div class="title">Scope of Work Document</div>`;
+      bodyHTML += toHTML(overview);
+      sectionIds.forEach(id => { if (CONTENT[id]) bodyHTML += toHTML(CONTENT[id]); });
+
+      const htmlDoc = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>${css}</style></head><body>${bodyHTML}</body></html>`;
+      const blob = new Blob([htmlDoc], { type: "application/msword" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "ITSM_Scope.doc";
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    // ---------------- boot ----------------
+    (function attachGenerator() {
+      document.addEventListener("DOMContentLoaded", async () => {
+        try { await loadJSONs(); }
+        catch(e) { console.error(e); alert("Failed to load JSON files. Ensure content.json (or content_converted.json) and mapping.json are in the same folder."); }
+
+        const form = document.querySelector("form");
+        form.addEventListener("submit", (e) => {
+          e.preventDefault();
+          const product = document.getElementById("product").value;
+          const editionEl = document.getElementById("edition");
+          const edition = (PRODUCTS_WITH_EDITIONS.has(product) && editionEl) ? editionEl.value : null;
+          const format = document.getElementById("format").value;
+          const selectedAddons = getSelectedAddons();
+          const sectionIds = buildSectionOrder(product, edition, selectedAddons);
+          if (!sectionIds.length) return alert("No sections mapped for this selection. Please review mapping.json.");
+          if (format === "pdf") generatePDF(sectionIds); else generateDOC(sectionIds);
+        });
+      });
+    })();
+  </script>
+</body>
+</html>
